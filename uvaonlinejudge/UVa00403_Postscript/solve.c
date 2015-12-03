@@ -205,7 +205,6 @@ void C5_print_char_at(int col, int row, char c) {
 		if (col_skip>=C5_WIDTH) {
 			return;
 		}
-		col = 0;
 	}
 	else {
 		col_skip = 0;
