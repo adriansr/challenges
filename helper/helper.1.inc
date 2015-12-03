@@ -4,12 +4,12 @@
 #include <iostream>
 #include <algorithm>
 
-#define NDEBUG
+//#define NDEBUG
 #include <cassert>
 
 namespace helper {
 
-namespace internal {
+namespace {
 bool IsSpace(char c) {
 	return c == ' ';
 }
@@ -83,7 +83,7 @@ void split_line(const std::string &s, Container *pcontainer) {
 	assert( inserter.ok() );
 }
 
-} // namespace internal
+} // anonymous-namespace 
 
 template<class T>
 void report(const char *name, const T& t) {
@@ -99,12 +99,12 @@ template<typename FieldType,
 		 FieldType (*Convert)(const std::string&) = & ConvertStr<FieldType>,
 		 bool (*IsDelimiter)(char) = IsSpace >
 
-std::array<FieldType,FixedLength> line_array(const std::string& s) {
+std::array<FieldType,FixedLength> num_array(const std::string& s) {
 	
 	std::array<FieldType,FixedLength> retval{};
 	using Container = decltype(retval);
 	split_line<FieldType,Container,FixedSizeInserter<Container>,Convert,IsDelimiter>(s,&retval);
-	//report("line_array",retval);
+	//report("num_array",retval);
 	return retval;
 }
 
@@ -112,12 +112,12 @@ template<typename FieldType,
 		 FieldType (*Convert)(const std::string&) = & ConvertStr<FieldType>,
 		 bool (*IsDelimiter)(char) = IsSpace >
 
-std::vector<FieldType> line_vector(const std::string& s) {
+std::vector<FieldType> num_vector(const std::string& s) {
 	
 	std::vector<FieldType> retval;
 	using Container = decltype(retval);
 	split_line<FieldType,Container,VariableSizeInserter<Container>,Convert,IsDelimiter>(s,&retval);
-	//report("line_vector",retval);
+	//report("num_vector",retval);
 	return retval;
 }
 
