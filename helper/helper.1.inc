@@ -193,6 +193,39 @@ class LineReader {
 };
 
 template<
+	class Predicate,
+    bool (*IsDelimiter)(char) = IsSpace >
+void for_each_word_predicate(std::string& s, Predicate pred, size_t start_pos = 0) {
+    size_t pos = start_pos,
+           len = s.size();
+    
+    do {
+
+        for (;pos<len && IsDelimiter(s[pos]);++pos)
+            ;
+
+        size_t end;
+        for (end=pos;end<len && !IsDelimiter(s[end]);++end)
+            ;
+
+        if (pos==end)
+            break;
+		
+		pred(s, pos, end - pos);
+        pos = end;
+    }
+    while (pos < len);
+}
+
+template<
+    bool (*IsDelimiter)(char) = IsSpace >
+void for_each_word(const std::string& s, std::function<void(std::string&& word)> pred, size_t start_pos = 0) {
+	auto predicate = [&pred](std::string& s, size_t pos, size_t len) { pred( s.substr(pos,len) ); };
+
+	for_each_word_predicate<IsDelimiter>(s,predicate,start_pos);
+}
+/*
+template<
     bool (*IsDelimiter)(char) = IsSpace >
 void for_each_word(const std::string& s, std::function<void(const std::string& word)> pred) {
     size_t pos = 0,
@@ -215,6 +248,7 @@ void for_each_word(const std::string& s, std::function<void(const std::string& w
     }
     while (pos < len);
 }
+*/
 
 template<
     typename IntType = int,
@@ -242,5 +276,56 @@ void for_each_number(const std::string& s, std::function<void(IntType)> pred) {
     }
     while (pos < len);
 }
+
+template<typename IntType = int>
+IntType extract_positive_number(const std::string& s, size_t start_pos = 0, size_t* end_pos = nullptr){
+	IntType num;
+	size_t pos;
+	char c;
+	for (num = 0 , pos = start_pos ; (c=s[pos])>='0' && c <= '9' ; ++pos ) {
+		num = num*10 + c - '0';
+	}
+	if (end_pos!=nullptr) {
+		*end_pos = pos;
+	}
+	return num;
+}
+
+class BufferedStdout {
+	public:
+		BufferedStdout(size_t reserve = 4096) {
+			buf_.reserve(reserve);
+		}
+		
+		~BufferedStdout() {
+			flush();
+		}
+
+		void flush() {
+			if (!buf_.empty()) {
+				if ( write(1,buf_.data(),buf_.size()) != buf_.size() ) {
+					throw "Write to stdout failed";
+				}
+				buf_.clear();
+			}
+		}
+		
+		BufferedStdout& append(const std::string& s) {
+			buf_.append(s);
+			return *this;
+		}
+		
+		BufferedStdout& append(char c) {
+			buf_.push_back(c);
+			return *this;
+		}
+	
+		BufferedStdout& append(int n) {
+			return append( std::to_string(n) );
+		}
+
+	private:
+		std::string buf_;
+};
 
 } // namespace helper
