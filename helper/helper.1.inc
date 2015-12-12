@@ -328,4 +328,8 @@ class BufferedStdout {
 		std::string buf_;
 };
 
+int inline string_to_int(const std::string& s) {
+    return std::stoi(s,nullptr,10);
+}
+
 } // namespace helper
