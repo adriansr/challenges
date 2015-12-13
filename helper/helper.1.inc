@@ -1,3 +1,6 @@
+#ifndef CHALLENGE_HELPER_1_H_INCLUDED
+#define CHALLENGE_HELPER_1_H_INCLUDED
+
 #include <string>
 #include <vector>
 #include <array>
@@ -12,6 +15,10 @@ namespace helper {
 namespace {
 bool IsSpace(char c) {
     return c == ' ';
+}
+
+bool IsNotDigit(char c) {
+    return c<'0' || c>'9';
 }
 
 template<typename IntType>
@@ -333,3 +340,5 @@ int inline string_to_int(const std::string& s) {
 }
 
 } // namespace helper
+
+#endif // CHALLENGE_HELPER_1_H_INCLUDED
