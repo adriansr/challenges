@@ -10,6 +10,8 @@
 #include <unistd.h>
 #include <functional>
 
+using Vi = std::vector<int>;
+
 namespace helper {
 
 namespace {
@@ -316,6 +318,11 @@ class BufferedStdout {
 				buf_.clear();
 			}
 		}
+
+        BufferedStdout& endl() {
+            buf_.push_back('\n');
+            return *this;
+        }
 		
 		BufferedStdout& append(const std::string& s) {
 			buf_.append(s);
