@@ -358,79 +358,31 @@ int inline string_to_int(const std::string& s) {
 #include <cstring>
 #include <cstdio>
 
-constexpr int N      = 1025;
+constexpr int N = 1025;
 
 struct {
     int cell[N][N];
-    // sum area table
-    int sat[N][N];
+    struct {
+        int x,y,s;
+    } max;
 } p ;
 
-int D;
+void add_nest(int x, int y, int count, int D) {
+    int min_x = std::max(x-D,0),
+        min_y = std::max(y-D,0),
+        max_x = std::min(x+D,N-1),
+        max_y = std::min(y+D,N-1);
 
-void mk_sum_area_table() {
-    int x,y;
-    int sum = p.sat[0][0] = p.cell[0][0];
-    for (x=1;x<N;++x) {
-        p.sat[0][x] = sum += p.cell[0][x];
-    }
-    sum = p.sat[0][0];
-    for (y=1;y<N;++y) {
-        p.sat[y][0] = sum += p.cell[y][0];
-    }
-
-    for (y=1;y<N;++y) {
-        for (x=1;x<N;++x) {
-            p.sat[y][x] = p.cell[y][x] + p.sat[y-1][x] + p.sat[y][x-1] - p.sat[y-1][x-1];
-        }
-    }
-}
-
-int sum_region(int x, int y) {
-    int ux = std::min(N-1,x+D),
-        uy = std::min(N-1,y+D);
-
-    int s = p.sat[uy][ux];
-
-    int lx = x - D - 1,
-        ly = y - D - 1;
-
-    char c = 0;
-    if (lx>=0 && lx>x) {
-        s -= p.sat[uy][lx];
-        ++c;
-    }
-
-    if (ly>=0 && ly>y) {
-        s -= p.sat[ly][ux];
-        ++c;
-    }
-    
-    if (c==2)
-        s += p.sat[ly][lx];
-
-    return s;
-}
-
-int sum_all(int *px, int *py) {
-    int max_x,
-        max_y,
-        max_s = -1;
-
-    for (int y = 0; y < N; ++y) {
-        for (int x = 0; x < N; ++x) {
-            int s = sum_region(x,y);
-            if (s > max_s) {
-                max_s = s;
-                max_y = y;
-                max_x = x;
+    for (int y = min_y ; y <= max_y; ++y) {
+        for (int x = min_x ; x <= max_x; ++x) {
+            int s = p.cell[y][x] += count;
+            if (s > p.max.s) {
+                p.max.s = s;
+                p.max.y = y;
+                p.max.x = x;
             }
         }
     }
-
-    *px = max_x;
-    *py = max_y;
-    return max_s;
 }
 
 int main() {
@@ -450,28 +402,25 @@ int main() {
         }
 
         reader.get_line(line);
-        D = helper::string_to_int(line);
+        const int D = helper::string_to_int(line);
 
         reader.get_line(line);
         const int num_nests = helper::string_to_int(line);
+        
+        p.max.s = -1;
 
         for (int i = 0; i < num_nests; ++i) {
             reader.get_line(line);
             rat_nest = helper::num_array<int,3>(line);
-            p.cell[rat_nest[1]][rat_nest[0]] = rat_nest[2];
+            add_nest(rat_nest[0],rat_nest[1],rat_nest[2],D);
         }
         
-        mk_sum_area_table();
 
-        int max_x,
-            max_y,
-            max_s = sum_all(&max_x,&max_y);
-
-        output.append(max_x)
+        output.append(p.max.x)
               .append(' ')
-              .append(max_y)
+              .append(p.max.y)
               .append(' ')
-              .append(max_s)
+              .append(p.max.s)
               .append('\n');
         
         /*for (int y = 0; y < 10; ++y) {
