@@ -18,21 +18,22 @@ bool check_constraints() {
     memset(distance,0,sizeof(distance));
 
     for (int i = 0; i < N-1; ++i) {
-        int vi = state[i];
+        int person_i = state[i];
         for (int j = i+1; j < N; ++j) {
-            int vj = state[j];
+            int person_j = state[j];
             int a,b;
-            if (vi < vj) {
-                a = vi;
-                b = vj;
+            if (person_i < person_j) {
+                a = person_i;
+                b = person_j;
             }
             else {
-                a = vj;
-                b = vi;
+                a = person_j;
+                b = person_i;
             }
             distance[a][b] = j - i;
         }
     }
+
     for (const auto& c : cv) {
         const int A = c[0],
                   B = c[1],
@@ -81,7 +82,7 @@ int main() {
     for(int test_count = 0; reader.get_line(line) ; ++test_count ) {
 
         params = helper::num_array<int,2>(line);
-        if (params[0] == 0) 
+        if (params[0] == 0)
             break;
         
         N = params[0];
