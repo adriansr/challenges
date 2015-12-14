@@ -324,6 +324,16 @@ class BufferedStdout {
             return *this;
         }
 		
+		BufferedStdout& append(const char *s, size_t len) {
+			buf_.append(s,len);
+			return *this;
+		}
+
+		BufferedStdout& append(const char *s) {
+			buf_.append(s);
+			return *this;
+		}
+
 		BufferedStdout& append(const std::string& s) {
 			buf_.append(s);
 			return *this;
