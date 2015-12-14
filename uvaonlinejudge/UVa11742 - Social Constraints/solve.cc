@@ -6,7 +6,7 @@
 int N,M;
 
 constexpr int MAX_N = 9;
-const int factorial[MAX_N] = {0, 1, 2, 6, 24, 96, 576, 4032, 32256};
+const int factorial[MAX_N] = {0, 1, 2, 6, 24, 120, 720, 5040, 40320};
 
 using Constraint = std::array<int,3>;
 std::vector<Constraint> cv;
@@ -14,23 +14,13 @@ Vi state;
 
 bool check_constraints() {
     int distance[N][N];
-    // not really needed 
-    memset(distance,0,sizeof(distance));
 
     for (int i = 0; i < N-1; ++i) {
-        int person_i = state[i];
+        int vi = state[i];
         for (int j = i+1; j < N; ++j) {
-            int person_j = state[j];
-            int a,b;
-            if (person_i < person_j) {
-                a = person_i;
-                b = person_j;
-            }
-            else {
-                a = person_j;
-                b = person_i;
-            }
-            distance[a][b] = j - i;
+            int vj = state[j];
+            distance[vi][vj] = j - i;
+            distance[vj][vi] = j - i;
         }
     }
 
@@ -39,19 +29,9 @@ bool check_constraints() {
                   B = c[1],
                   C = c[2];
         
-        // not actually needed according to problem desc, A < B always
-        int a, b;
-        if (A < B) {
-            a = A;
-            b = B;
-        }
-        else {
-            a = B;
-            b = A;
-        }
-        int dist = distance[a][b];
-        if (C>0 && dist> C) return false;
-        if (C<0 && dist<-C) return false;
+        int dist = distance[A][B];
+        if ((C>0 && dist> C) || (C<0 && dist<-C))
+            return false;
     }
     return true;
 }
@@ -63,11 +43,14 @@ int solve() {
 
     int count = 0;
 
-    while (std::next_permutation(state.begin(), state.end())) {
+    do
+    {
         if (check_constraints()) {
             ++ count;
         }
     }
+    while (std::next_permutation(state.begin(), state.end()));
+
     return count;
 }
 
@@ -97,11 +80,12 @@ int main() {
                 reader.get_line(line);
                 cv.push_back(helper::num_array<int,3>(line));
             }
-            output.append(solve()).endl();
+            output.append(solve());
         }
         else {
-            output.append(factorial[N]).endl();
+            output.append(factorial[N]);
         }
+        output.endl();
     }
 }
 
