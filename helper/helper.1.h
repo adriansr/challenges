@@ -15,11 +15,11 @@ using Vi = std::vector<int>;
 namespace helper {
 
 namespace {
-bool IsSpace(char c) {
+bool __attribute__((unused)) IsSpace(char c) {
     return c == ' ';
 }
 
-bool IsNotDigit(char c) {
+bool __attribute__((unused)) IsNotDigit(char c) {
     return c<'0' || c>'9';
 }
 
