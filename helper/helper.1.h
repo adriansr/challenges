@@ -9,6 +9,11 @@
 #include <cstring>
 #include <unistd.h>
 #include <functional>
+#include <bitset>
+#include <map>
+#include <set>
+#include <cstdio>
+#include <deque>
 
 using Vi = std::vector<int>;
 
@@ -162,6 +167,16 @@ class LineReader {
             return true;
         }
 
+        bool operator()(std::string& s) {
+            return get_line(s);
+        }
+
+        std::string operator()() {
+            std::string retval;
+            get_line(retval);
+            return retval;
+        }
+
     private:
         bool fill_buffer() {
             if (lastRead_) return false;
@@ -312,7 +327,7 @@ class BufferedStdout {
 
 		void flush() {
 			if (!buf_.empty()) {
-				if ( write(1,buf_.data(),buf_.size()) != buf_.size() ) {
+				if ( write(1,buf_.data(),buf_.size()) != (ssize_t)buf_.size() ) {
 					throw "Write to stdout failed";
 				}
 				buf_.clear();
@@ -348,12 +363,67 @@ class BufferedStdout {
 			return append( std::to_string(n) );
 		}
 
+        BufferedStdout& append(size_t n) {
+			return append( std::to_string(n) );
+		}
+
+
 	private:
 		std::string buf_;
 };
 
 int inline string_to_int(const std::string& s) {
     return std::stoi(s,nullptr,10);
+}
+
+enum BTResult {
+    Continue,
+    Prune,
+    PruneBack,
+    Abort,
+    Accept
+};
+
+namespace {
+    template<class Problem,
+             class State>
+    BTResult do_backtracking(Problem& problem, State state) {
+        
+        while( problem.next(state) ) {
+            BTResult r = problem.eval(state);
+            switch(r) {
+                case Continue:
+                    if ((r=do_backtracking(problem,problem.visit(state))) != Continue) {
+                        return r;
+                    }
+                    break;
+
+                case PruneBack:
+                    return Continue;
+
+                case Prune:
+                    break;
+
+                case Abort:
+                    return Abort;
+
+                case Accept:
+                    return Accept;
+            }
+        }
+
+        return Continue;
+    }
+}
+
+template<class Problem>
+BTResult backtrack(Problem& problem) {
+    typename Problem::State root(problem.root());
+    auto early_ret = problem.eval(root);
+    if (early_ret != Continue) {
+        return early_ret;
+    }
+    return do_backtracking(problem,problem.visit(root));
 }
 
 } // namespace helper
