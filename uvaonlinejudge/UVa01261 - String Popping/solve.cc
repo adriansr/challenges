@@ -8,20 +8,18 @@ Vi stringToV(const std::string& s) {
     Vi result;
     result.reserve(s.size());
     char c = s[0];
-    bool sign = false;
     for (int i=1; i < len; ++i) {
         if (s[i] == c) {
             ++count;
         }
         else {
             c = s[i];
-            result.push_back(sign? count : -count);
+            result.push_back(count);
             count = 1;
-            sign = !sign;
         }
     }
     if (count)
-        result.push_back(sign? count : -count);
+        result.push_back(count);
     return result;
 }
 
@@ -46,7 +44,7 @@ bool backtrack(const Vi& vect) {
 
     bool retval = false;
     for (int i = 0, len = vect.size(); i < len; ++i) 
-        if (vect[i]>1 || vect[i]<-1) {
+        if (vect[i]>1) {
             Vi tmp(vect);
             erase_at(tmp,i);
             if (backtrack(tmp)) {
@@ -61,7 +59,6 @@ bool backtrack(const Vi& vect) {
 bool solve(const std::string& s) {
     if (s.size()) {
         Vi problem(stringToV(s));
-        //helper::report("problem",problem);
         return backtrack(problem);
     }
     return true;
@@ -77,11 +74,9 @@ int main() {
 
     char result[2] = {'0','\n'};
     for (int ncase = 1; ncase <= NUM_CASES; ++ncase) {
-        
         reader.get_line(line);
         result[0] = solve(line)? '1' : '0';
         output.append(result,2);
-
     }
 }
 
