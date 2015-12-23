@@ -1,11 +1,11 @@
 #include "../../helper/helper.1.h"
 
-std::map<Vi,bool> memo;
+std::map<std::string,bool> memo;
 
-Vi stringToV(const std::string& s) {
+std::string stringToV(const std::string& s) {
     int count = 1,
         len = s.size();
-    Vi result;
+    std::string result;
     result.reserve(s.size());
     char c = s[0];
     for (int i=1; i < len; ++i) {
@@ -14,26 +14,39 @@ Vi stringToV(const std::string& s) {
         }
         else {
             c = s[i];
-            result.push_back(count);
+            result.push_back(count>1? '1' : '0');
             count = 1;
         }
     }
     if (count)
-        result.push_back(count);
+        result.push_back(count>1? '1':'0');
     return result;
 }
 
-void erase_at(Vi& vect, int pos) {
-    int lastpos = vect.size() - 1;
-    if (pos>0 && pos<lastpos) {
-        vect[pos-1] += vect[pos+1];
-        vect.erase(vect.begin()+pos, vect.begin()+pos+2);
+std::string copy_erase_at(const std::string& vect, int pos) {
+    std::string retval;
+    int len = vect.size();
+    retval.reserve(len);
+
+    for (int i = 0; i < pos;++i) {
+        retval.push_back(vect[i]);
+    }
+    int from;
+    if (pos>0 && pos+1 < len) {
+        retval.back() = '1';
+        from = pos + 2;
     }
     else
-        vect.erase(vect.begin()+pos);
+        from = pos + 1;
+
+    for (int i=from; i < len; ++i) {
+        retval.push_back(vect[i]);
+    }
+
+    return retval;
 }
 
-bool backtrack(const Vi& vect) {
+bool backtrack(std::string&& vect) {
     const auto it = memo.find(vect);
     if (it != memo.end()) {
         return it->second;
@@ -44,10 +57,8 @@ bool backtrack(const Vi& vect) {
 
     bool retval = false;
     for (int i = 0, len = vect.size(); i < len; ++i) 
-        if (vect[i]>1) {
-            Vi tmp(vect);
-            erase_at(tmp,i);
-            if (backtrack(tmp)) {
+        if (vect[i]!='0') {
+            if (backtrack(copy_erase_at(vect,i))) {
                 retval = true;
                 break;
             }
@@ -58,8 +69,7 @@ bool backtrack(const Vi& vect) {
 
 bool solve(const std::string& s) {
     if (s.size()) {
-        Vi problem(stringToV(s));
-        return backtrack(problem);
+        return backtrack(stringToV(s));
     }
     return true;
 }
