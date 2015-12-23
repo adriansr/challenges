@@ -1,6 +1,6 @@
 #include "../../helper/helper.1.h"
-
-std::map<std::string,bool> memo;
+#include <unordered_map>
+std::unordered_map<std::string,bool> memo;
 
 std::string stringToV(const std::string& s) {
     int count = 1,
