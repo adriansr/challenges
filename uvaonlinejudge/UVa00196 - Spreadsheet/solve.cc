@@ -1,3 +1,5 @@
+//#include "../../helper/helper.1.h"
+
 #ifndef CHALLENGE_HELPER_1_H_INCLUDED
 #define CHALLENGE_HELPER_1_H_INCLUDED
 
@@ -429,3 +431,117 @@ BTResult backtrack(Problem& problem) {
 } // namespace helper
 
 #endif // CHALLENGE_HELPER_1_H_INCLUDED
+#include <unordered_map>
+
+constexpr int MAX_ROWS = 1000,
+              MAX_COLS = 18280;
+
+using CellValue = int;
+
+CellValue sheet[MAX_ROWS][MAX_COLS];
+std::unordered_map<int,Vii> formula;
+
+int mkpos(int row, int col) {
+    return row * MAX_ROWS + col;
+}
+
+void solve(int row, int col, const Vii& cell_list) {
+    
+    //std::cerr << "solve " << row << "," << col << "\n";
+    int total = 0;
+    for (const auto& cell : cell_list) {
+        int pos = mkpos(cell.first,cell.second);
+        const auto it = formula.find(pos);
+        if (it != formula.end()) {
+            solve(cell.first,cell.second,it->second);
+            formula.erase(it);
+        }
+        total += sheet[cell.first][cell.second];
+    }
+    sheet[row][col] = total;
+    //std::cerr << " done " << total << "\n";
+}
+
+void parse_formula(int row, int col, const std::string& s) {
+    size_t pos = 0,
+           end = s.size();
+    
+    Vii& dest = formula[mkpos(row,col)];
+    
+    do {
+
+        ++pos;
+
+        char c;
+        size_t endpos;
+        for (endpos=pos;(c=s[endpos])>='A' && c<='Z';++endpos)
+            ;
+        int fcol;
+        switch (endpos - pos) {
+            case 1:
+                fcol = s[pos] - 'A';
+                break;
+            case 2:
+                fcol = ((s[pos] - 'A') + 1) * 26 + s[pos+1] - 'A';
+                break;
+            case 3:
+                fcol = (s[pos] - 'A' + 1) * 26*26 + (s[pos+1]-'A'+1)*26 + s[pos+2] - 'A';
+                break;
+        }
+
+        int frow = 0;
+        for (pos=endpos;(c=s[pos])>='0' && c <='9';++pos) 
+            frow = frow * 10 + c - '0';
+
+        dest.emplace_back(frow-1,fcol);
+    }
+    while(pos<end);
+    //std::cerr << "saved " << row << " " <<  col << " " << dest.size() << " / " << s << "\n";
+}
+
+int main() {
+    helper::BufferedStdout output;
+    helper::LineReader<1024*1024> reader;
+    std::string line;
+    
+    const int NUM_CASES = helper::string_to_int(reader());
+
+    std::array<int,2> dims;
+    for (int num_case = 0; num_case < NUM_CASES; ++num_case) {
+
+        if (num_case) {
+            formula.clear();
+        }
+
+        dims = helper::num_array<int,2>(reader());
+        for (int row=0;row<dims[1];++row) {
+            reader.get_line(line);
+            int col = 0;
+            helper::for_each_word(line,[row,&col](std::string&& word) {
+                        if (word[0]!='=') {
+                            sheet[row][col++] = helper::string_to_int(word);
+                        }
+                        else {
+                            parse_formula(row,col++,word);
+                        }
+                    });
+        }
+
+        while( formula.size() ) {
+            const auto it = formula.begin();
+            int row = it->first / MAX_ROWS,
+                col = it->first % MAX_ROWS;
+            solve(row,col,it->second);
+            formula.erase(it);
+        }
+
+        for (int row=0;row<dims[1];++row) {
+            output.append(sheet[row][0]);
+            for (int col=1;col<dims[0];++col) {
+                output.append(' ').append(sheet[row][col]);
+            }
+            output.endl();
+        }
+    }
+}
+
