@@ -1,34 +1,39 @@
 #include "../../helper/helper.1.h"
-#include <cassert>
 
 constexpr int MIN_VARS = 2,
               MAX_VARS = 20,
               MAX_CONSTRAINTS = 50,
               MAX_ORDERINGS = 300;
 
-std::array<Vi,MAX_VARS+1> adj_list;
-std::bitset<MAX_VARS+1> secondary;
+std::array<Vi,MAX_VARS+1> req_list;
 std::string nodes;
 
 std::vector<std::string> solutions;
 std::string current;
 
 void cleanup() {
-    for (auto& list : adj_list) {
+    for (auto& list : req_list) {
         list.clear();
     }
-    secondary.reset();
     nodes.clear();
     solutions.clear();
 }
 
-void toposort_do(int node,int visited) {
+void do_solve(int node,int visited) {
     if (! (visited&(1<<node)) ) {
+        for (int req : req_list[node]) {
+            if (!(visited&(1<<req))) {
+                return;
+            }
+        }
+
+        visited |= (1<<node);
         current.push_back(nodes[node]);
         if (current.size() < nodes.size()) {
-            int new_visited = visited | (1<<node);
-            for (int neigh : adj_list[node]) {
-                toposort_do(neigh,new_visited);
+            for (int i=0;i<nodes.size();++i) {
+                if (! (visited&(1<<i)) ) {
+                    do_solve(i,visited);
+                }
             }
         }
         else {
@@ -38,10 +43,9 @@ void toposort_do(int node,int visited) {
     }
 }
 
-void toposort(int base_node) {
+void solve(int base_node) {
     current.clear();
-    std::cerr << "toposort " << base_node << "\n";
-    toposort_do(base_node,0);
+    do_solve(base_node,0);
 }
 
 int main() {
@@ -60,47 +64,39 @@ int main() {
 
         if (ncase) {
             cleanup();
+            output.endl();
         }
         
         reader.get_line(line);
         for (int i=0;i<line.size();i+=2) {
             nodes.push_back(line[i]);
         }
+        std::sort(nodes.begin(),nodes.end());
         
         reader.get_line(line);
         for (int i=0;i<line.size();i+=4) {
             size_t src = nodes.find(line[i]),
                    dst = nodes.find(line[i+2]);
-            assert( src != nodes.npos );
-            assert( dst != nodes.npos );
-            std::cerr << "node " << line[i] << " to " << line[i+2] << "\n";
-            secondary[dst] = true;
-            adj_list[src].push_back(dst);
+            req_list[dst].push_back(src);
         }
 
         for (int i=0;i<nodes.size();++i) {
-            if (adj_list[i].empty()) {
-                for (int j=0;i<nodes.size();++i) {
-                    if (j!=i) {
-                        adj_list[i].push_back(j);
-                        adj_list[j].push_back(i);
-                    }
+            if (req_list[i].empty()) {
+                solve(i);
+            }
+        }
+        
+        if (solutions.size()) {
+            for (const auto& sol : solutions) {
+                output.append(sol[0]);
+                for (int i=1;i<nodes.size();++i) {
+                    output.append(' ').append(sol[i]);
                 }
+                output.endl();
             }
         }
-
-        for (int i=0;i<nodes.size();++i) {
-            if (!secondary[i]) {
-                toposort(i);
-            }
-        }
-
-        for (const auto& sol : solutions) {
-            output.append(sol[0]);
-            for (int i=1;i<nodes.size();++i) {
-                output.append(' ').append(sol[i]);
-            }
-            output.endl();
+        else {
+            output.append("NO\n");
         }
     }
 }
