@@ -97,7 +97,7 @@ void bfs_limit(const Vi& start,
     std::queue<std::pair<Vi,int>> q;
 
     q.emplace(start,0);
-
+    
     Vi state,
        new_state(start),
        rest,
@@ -111,7 +111,7 @@ void bfs_limit(const Vi& start,
         q.pop();
         
         if (relax(state,distance,dist) && distance < max_depth) {
-
+            
             int new_distance = distance + 1;
             for (int start = 0; start < max_start; ++start) {
                 for (int end=start;end<N;++end) {
@@ -150,7 +150,7 @@ int solve(int N, Vi& source) {
             dist_solution;
 
     Vi solution(mk_solution(N));
-    int max_depth = max_distance_to_solution(source),
+    int max_depth = std::min(max_distance_to_solution(source),5),
         first_depth = (max_depth-1) / 2,
         second_depth = max_depth - first_depth - 1;
 
