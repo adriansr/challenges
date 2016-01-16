@@ -16,7 +16,8 @@
 #include <deque>
 
 using Vi = std::vector<int>;
-using Vii = std::vector<std::pair<int,int>>;
+using ii  = std::pair<int,int>;
+using Vii = std::vector<ii>;
 
 namespace helper {
 
