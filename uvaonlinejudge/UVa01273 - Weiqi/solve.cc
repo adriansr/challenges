@@ -8,17 +8,12 @@ helper::BufferedStdout output;
 
 class WeiqiGame {
     public:
-        static constexpr int BOARD_SIZE = 19;
+        static constexpr int BOARD_SIZE = 19,
+                             ROW_SIZE = BOARD_SIZE + 1;
 
         WeiqiGame() {
             reset();
         }
-
-        enum Color {
-            None,
-            Black,
-            White
-        };
 
         enum PassType {
             Player,
@@ -33,11 +28,11 @@ class WeiqiGame {
             }
 
             player_ = other(player_);
-            output.append(turnNumber_).append(": (").append(y).append(',').append(x).endl();
+            /*output.append(turnNumber_).append(": (").append(y).append(',').append(x)
+                  .append(") ").append(player_).endl();*/
             if (x == -1 || y == -1) {
                 return false;
             }
-            last_[player_] = board_;
 
             if (first_) {
                 ++gameCount_;
@@ -49,115 +44,137 @@ class WeiqiGame {
                 return true;
             }
             
-            if (board_[y-1][x-1].color != None) {
+            if (board_[pos(y-1,x-1)] != '+') {
                 onPass(Invalid,y,x);
                 return true;
             }
             
-            bool p = put(y-1,x-1);
-            lastPassed_ = p;
+            lastPassed_ = put(y-1,x-1);
             if (!lastPassed_) {
-                auto result = seen_boards_.insert(board_);
-                if (!result.second) {
+                last_[player_=='e'] = std::make_pair(y,x);
+                if (!seen_boards_.insert(board_).second) {
                     onEnd(true);
                 }
             }
-            printBoard();
-            output.endl();
+            //printBoard();
+            //output.endl();
             return true;
         }
 
     private:
-        static Color other(Color p) {
-            assert(p != None);
-            return p == Black? White : Black;
+        static int pos(int y, int x) {
+            return y*ROW_SIZE + x;
+        }
+        using BoardType = std::string;
+        using MaskType = std::bitset<BOARD_SIZE*ROW_SIZE>;
+
+        static char other(char p) {
+            assert(p != '+');
+            return p == 'e'? 'o' : 'e';
         }
 
         bool put(int y, int x) {
-            board_[y][x].color = player_;
-            int killed[2] {floodFill(y,x,player_),0};
-            Color c;
-
-            if (y > 0 && (c=board_[y-1][x].color) != None) {
-                killed[c!=player_] += floodFill(y-1,x,c);
-            }
-            if (y < BOARD_SIZE && (c=board_[y+1][x].color) != None) {
-                killed[c!=player_] += floodFill(y+1,x,c);
-            }
-            if (x > 0 && (c=board_[y][x-1].color) != None) {
-                killed[c!=player_] += floodFill(y,x-1,c);
-            }
-            if (x < BOARD_SIZE && (c=board_[y][x+1].color) != None) {
-                killed[c!=player_] += floodFill(y,x+1,c);
-            }
+            board_[pos(y,x)] = player_;
+            MaskType ignore,mask;
+            int killed[2] {floodFill(y,x,player_,ignore),0};
+            char c;
             
+            if (y > 0 && (c=board_[pos(y-1,x)]) != '+') {
+                bool idx = c != player_;
+                if (idx) {
+                    MaskType m;
+                    killed[idx] += floodFill(y-1,x,c,m);
+                    mask |= m;
+                }
+            }
+            if (y < BOARD_SIZE && (c=board_[pos(y+1,x)]) != '+') {
+                bool idx = c != player_;
+                if (idx) {
+                    MaskType m;
+                    killed[idx] += floodFill(y+1,x,c,m);
+                    mask |= m;
+                }
+            }
+            if (x > 0 && (c=board_[pos(y,x-1)]) != '+') {
+                bool idx = c != player_;
+                if (idx) {
+                    MaskType m;
+                    killed[idx] += floodFill(y,x-1,c,m);
+                    mask |= m;
+                }
+            }
+            if (x < BOARD_SIZE && (c=board_[pos(y,x+1)]) != '+') {
+                bool idx = c != player_;
+                if (idx) {
+                    MaskType m;
+                    killed[idx] += floodFill(y,x+1,c,m);
+                    mask |= m;
+                }
+            }
+
             if (killed[0]>0 && !killed[1]) {
-                unvisit();
-                board_[y][x].color = None;
+                board_[pos(y,x)] = '+';
                 onPass(Taboo,y+1,x+1);
                 return true;
             }
             else if (killed[1]>0) {
-                Color enemy = other(player_);
-                killall(enemy);
-                unvisit();
-                if (board_ == last_[enemy]) {
+                char enemy = other(player_);
+                auto l = last_[enemy=='e'];
+                if (killed[1] == 1 && l.first!=0 && mask[pos(l.first-1,l.second-1)]) {
+                    /*std::cerr << turnNumber_ << ": taboo last "
+                              << "killed " << l.first << ":" << l.second << '\n';
+                    for (int j=0;j<BOARD_SIZE;++j) {
+                        for (int i=0;i<BOARD_SIZE;++i) {
+                            if (mask[pos(j,i)]) {
+                                std::cerr << "mask " << (j+1) << "," << (i+1) << "\n";
+                            }
+                        }
+                    }*/
                     onPass(Taboo,y+1,x+1);
-                    board_ = last_[player_];
+                    board_[pos(y,x)] = '+';
                     return true;
                 }
-            }
-            else {
-                unvisit();
+                killall(enemy,mask);
             }
             return false;
         }
         
-        void killall(Color c) {
+        void killall(char c, const MaskType& mask) {
             for (int j=0;j<BOARD_SIZE;++j) {
                 for (int i=0;i<BOARD_SIZE;++i) {
-                    auto &b = board_[j][i];
-                    if (b.visited && b.color == c) {
-                        b.color = None;
+                    if (mask[pos(j,i)]) {
+                        //std::cerr << "<" << board_[pos(j,i)] << ">\n";
+                        assert(board_[pos(j,i)]==c);
+                        board_[pos(j,i)] = '+';
                     }
                 }
             }
         }
 
-        void unvisit() {
-            for (int j=0;j<BOARD_SIZE;++j) {
-                for (int i=0;i<BOARD_SIZE;++i) {
-                    auto &b = board_[j][i];
-                    if (b.visited) {
-                        b.visited = false;
-                    }
-                }
-            }
-        }
-
-
-
-        int floodFill(int sy, int sx, Color value) {
-            auto saved = board_;
+        int floodFill(int sy, int sx, char value, MaskType& mask) {
             std::queue<ii> q;
-            q.push(std::make_pair(sy,sx));
+            q.emplace(sy,sx);
             int count = 0,x,y;
             do {
                 std::tie(y,x) = q.front();
                 q.pop();
                 if (y>=0 && y<BOARD_SIZE && x>=0 && x<BOARD_SIZE) {
-                    auto& b = board_[y][x];
-                    if (!b.visited) {
-                        if (b.color == value) {
+                    auto& b = board_[pos(y,x)];
+                    if (!mask[pos(y,x)]) {
+                        if (b == value) {
                             ++ count;
-                            b.visited = true;
-                            q.push(std::make_pair(y+1,x));
-                            q.push(std::make_pair(y-1,x));
-                            q.push(std::make_pair(y,x+1));
-                            q.push(std::make_pair(y,x-1));
+                            mask[pos(y,x)] = true;
+                            q.emplace(y+1,x);
+                            q.emplace(y-1,x);
+                            q.emplace(y,x+1);
+                            q.emplace(y,x-1);
                         }
-                        else if(b.color == None) {
-                            board_ = saved;
+                        else if(b == '+') {
+                            /*if (turnNumber_ == 21) {
+                                std::cerr << "Reset at " << (y+1) << "," << (x+1) 
+                                    << " " << value << "\n";
+                            }*/
+                            mask.reset();
                             return 0;
                         }
                     }
@@ -170,7 +187,7 @@ class WeiqiGame {
         void onPass(PassType type, int y, int x) {
 
             output.append("Turn ").append(turnNumber_).append(' ')
-                  .append(player_==White?"white":"black")
+                  .append(player_=='o'?"white":"black")
                   .append(" pass (");
             switch (type) {
                 case Player:
@@ -196,14 +213,15 @@ class WeiqiGame {
         }
         
         void printBoard() {
-            std::array<char,BOARD_SIZE+1> line;
+            /*std::array<char,BOARD_SIZE+1> line;
             line[BOARD_SIZE] = '\n';
             for (int j=0;j<BOARD_SIZE;++j) {
                 for (int i=0;i<BOARD_SIZE;++i) {
-                    line[i] = "+eo"[board_[j][i].color];
+                    line[i] = "+eo"[board_[j][i]];
                 }
                 output.append(line.data(),line.size());
-            }
+            }*/
+            output.append(board_);
         }
 
         void onEnd(bool tie) {
@@ -215,36 +233,30 @@ class WeiqiGame {
         }
 
         void reset() {
-            for (auto& row : board_) {
-                row.fill(Intersection());
+            
+            board_.clear();
+            board_.resize(BOARD_SIZE*ROW_SIZE,'+');
+            for (int i=0;i<BOARD_SIZE;++i) {
+                board_[pos(i,BOARD_SIZE)] = '\n';
             }
-
-            player_ = White;
+            player_ = 'o';
             first_ = true;
             turnNumber_ = 0;
             lastPassed_ = false;
             seen_boards_.clear();
+            last_[0] = {0,0};
+            last_[1] = {0,0};
         }
 
-        struct Intersection {
-            Intersection() : color(None), visited(false) {}
-            Color color;
-            bool visited;
-
-            bool operator==(const Intersection& rhs) const {
-                return color == rhs.color;
-            }
-        };
-
         bool first_ = true;
-        using BoardType = std::array<std::array<Intersection,BOARD_SIZE>,BOARD_SIZE>;
-        BoardType board_,
-                  last_[3];
-        Color player_ = White;
+
+        BoardType board_;
+        char player_ = 'o';
         int gameCount_ = 0;
         int turnNumber_ = 0;
         bool lastPassed_ = false;
         std::unordered_set<BoardType> seen_boards_;
+        ii last_[2];
 };
 
 class NumberPairReader {
