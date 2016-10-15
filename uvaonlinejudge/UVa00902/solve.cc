@@ -552,7 +552,7 @@ int main() {
             }
         }
         for (int shift=(N-1)*SHIFT,i=0;i<N;shift-=SHIFT,++i) {
-            outputVector[i] = 'a' + ( ((maxValue >> shift)&(1<<SHIFT)) - 1 );
+            outputVector[i] = 'a' + ( ((maxValue >> shift)&((1<<SHIFT) - 1) );
         }
         outputVector[N] = '\n';
         output.append(outputVector, N+1);
