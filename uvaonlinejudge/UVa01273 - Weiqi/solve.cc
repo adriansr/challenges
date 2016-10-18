@@ -35,8 +35,12 @@ class WeiqiGame {
             }
 
             if (first_) {
-                ++gameCount_;
-                output.append("Game #").append(gameCount_).endl();
+                if (!lastGameTie) {
+                    ++gameCount_;
+                    output.append("Game #").append(gameCount_).endl();
+                }
+                else 
+                    lastGameTie = false;
                 first_ = false;
             }
             if (x == 0 || y == 0) {
@@ -229,6 +233,8 @@ class WeiqiGame {
             if (tie) 
                 output.append("(Tie)\n");
             printBoard();    
+            lastGameTie = tie;
+            if (!tie) output.endl();
             reset();
         }
 
@@ -257,6 +263,7 @@ class WeiqiGame {
         bool lastPassed_ = false;
         std::unordered_set<BoardType> seen_boards_;
         ii last_[2];
+        bool lastGameTie = false;
 };
 
 class NumberPairReader {

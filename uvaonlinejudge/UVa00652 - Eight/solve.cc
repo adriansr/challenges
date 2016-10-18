@@ -267,7 +267,7 @@ std::string solve(const Puzzle& base_case) {
 
 int main() {
     helper::BufferedStdout output;
-    helper::LineReader<> reader;
+    helper::LineReader<1024*1024> reader;
     std::string line;
     
     precalc_manhattan_distances();

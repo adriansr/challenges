@@ -16,10 +16,8 @@ void calc_nod() {
     }
 
     for (int i=3;i<LIMIT;++i) {
-        if (true) {
-            for (int j=i+i;j<LIMIT;j+=i) {
-                nod[j] ++;
-            }
+        for (int j=i+i;j<LIMIT;j+=i) {
+            nod[j] ++;
         }
     }
 }
