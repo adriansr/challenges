@@ -146,6 +146,16 @@ class LineReader {
         }
 
         bool get_line(std::string& s) {
+            const char *data;
+            size_t len;
+            if (get_line_nocopy(&data, &len)) {
+                s.assign(data, len);
+                return true;
+            }
+            return false;
+        }
+
+        bool get_line_nocopy(const char **pline, size_t *plen) {
             if (eof_) {
                 return false;
             }
@@ -163,8 +173,9 @@ class LineReader {
                     eof_ = true;
                 }
             }
-
-            s.assign(buffer_,used_,pos-used_);
+            *pline = &buffer_[used_];
+            *plen  = pos - used_;
+            //s.assign(buffer_,used_,pos-used_);
             used_ = pos+1;
             return true;
         }
