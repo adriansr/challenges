@@ -1,3 +1,4 @@
+#include "../../helper/helper.1.h"
 #include <array>
 #include <bitset>
 #include <iostream>
@@ -5,62 +6,50 @@
 #include <string>
 #include <vector>
 
-//#define NDEBUG
-#include <cassert>
-
 using S = std::string;
 
 class Problem {
     public:
         Problem(S&& op1, S&& op2, S&& res, char op) {
-            //assert(op == '+' || op == '*');
+            //std::cerr << "op: " << op1 << op << op2 << '=' << res << '\n';
             isAdd_ = op == '+';
             std::swap(operand_[0], op1);
             std::swap(operand_[1], op2);
             std::swap(operand_[2], res);
             int numStages = std::max(operand_[0].size(), operand_[1].size());
             stage_.resize(numStages);
-            mapping_.fill(-1);
             for (const S& e : operand_) {
                 prepare_operands_(e);
             }
             prepare_stages_(operand_[0]);
             prepare_stages_(operand_[1]);
-            //for (int i=0; i<numStages; ++i) {
-            //    std::cerr << "stage[" << i <<"]: '" << stage_[i] << "'\n";
-            //}
         }
         
         std::string solve() {
-            bool allOne = true;
-            for (const auto& op : operand_) {
-                allOne &=  op.size() == 1;
-            }
-            if (allOne && isAdd_) {
-                return "0 + 0 = 0";
+            if (isAdd_) {
+                bool allOne = true;
+                for (const auto& op : operand_) {
+                    allOne &=  op.size() == 1;
+                }
+                if (allOne) {
+                    return "0 + 0 = 0";
+                }
             }
 
             bool solved = solve_(0, 0, 0);
-            assert(solved);
             if (solved) {
-            std::string result(std::to_string(subst_(0)));
-            result.append(isAdd_? " + " : " * ");
-            result.append(std::to_string(subst_(1)));
-            result.append(" = ");
-            result.append(std::to_string(subst_(2)));
-            return result;
+                std::string result(std::to_string(subst_(0)));
+                result.append(isAdd_? " + " : " * ");
+                result.append(std::to_string(subst_(1)));
+                result.append(" = ");
+                result.append(std::to_string(subst_(2)));
+                return result;
             }
             else
-                return "npi";
+                return "Invalid input";
         }
 
     private:
-        
-        struct Debug {
-            Debug(Problem* t) : t_(t) { t_->debug_ = true; }
-            ~Debug() { t_->debug_ = false; }
-            Problem *t_;
-        };
 
         bool solve_(const int level, const int pos, const int mask) {
 
@@ -87,14 +76,11 @@ class Problem {
                     return false;
 
                 } else {
-                    //std::cerr << "Resolving level " << level << ": " << stage_[level] << '\n';
                     int64_t val[2];
                     for (int i=0;i<2;++i) {
                         val[i] = subst_(operand_[i], level);
                     }
                     int64_t res = op_(val[0], val[1]);
-                    //if (level >= operand_[2].size()) return false;
-                    assert(level < operand_[2].size());
                     char unk = operand_[2][operand_[2].size()-1-level];
                     int digit = (res / pow10_(level)) % 10;
                     bool mapped;
@@ -132,9 +118,6 @@ class Problem {
                     }
                 }
                 
-                //
-
-                //Debug d(this);
                 val[2] = subst_(2);
                 bool result = target == val[2];
                 if (!result) {
@@ -165,7 +148,7 @@ class Problem {
                 case 16: return 10000000000000000L;
                 case 17: return 100000000000000000L;
                 case 18: return 1000000000000000000L;
-                default: return 0;
+                default: return 1;
             }
         }
 
@@ -178,13 +161,7 @@ class Problem {
             int end = op.size();
             int start = std::max(0, end - level - 1);
             for (int i=start; i<end; ++i) {
-                int value = mapping_[op[i]];
-                /*if (value == -1) {
-                    std::cerr << "no match for: " << op[i] << " in " << op << '\n';
-                }*/
-                if (value == -1 && debug_) break;
-                assert(value != -1);
-                num = num*10 + value;
+                num = num*10 + mapping_[op[i]];
             }
             return num;
         }
@@ -197,10 +174,7 @@ class Problem {
             for (char c : operand) {
                 mapping_[c] = -1;
             }
-            //if (operand.size()>1)
-                noZero_[operand[0]] = true;
-            //else
-            //    noZero_[operand[0]] = false;
+            noZero_[operand[0]] = true;
         }
 
         void prepare_stages_(const S& operand) {
@@ -215,14 +189,26 @@ class Problem {
         std::array<int, 256> mapping_;
         std::bitset<256> noZero_;
         std::vector<S> stage_;
-        bool debug_ = false;
 };
 
-int main() {
-    S operand1, operand2, result, operation, dummy;
+constexpr int MAX_INPUT_LINE_LENGTH = 8192;
 
-    while (std::cin >> operand1 >> operation >> operand2 >> dummy >> result) {
-        //assert(operation.size()==1);
+helper::BufferedStdout output;
+helper::LineReader<MAX_INPUT_LINE_LENGTH> reader; // <-- check or RE
+
+int main() {
+
+    S line, operand1, operand2, result, operation, dummy;
+
+    operation.resize(1);
+
+    while (reader(line)) {
+        int pos = line.find(' ');
+        operand1.assign(line, 0, pos);
+        operation[0] = line[pos+1];
+        int pos2 = line.find('=', pos);
+        operand2.assign(line, pos+3, pos2 - 1 - (pos+3));
+        result.assign(line,pos2+2, line.size() - (pos2+2));
         Problem p(std::move(operand1), std::move(operand2), std::move(result), operation[0]);
         std:: cout << p.solve() << '\n';
     }
