@@ -32,6 +32,14 @@ class Problem {
         }
         
         std::string solve() {
+            bool allOne = true;
+            for (const auto& op : operand_) {
+                allOne &=  op.size() == 1;
+            }
+            if (allOne && isAdd_) {
+                return "0 + 0 = 0";
+            }
+
             bool solved = solve_(0, 0, 0);
             assert(solved);
             if (solved) {
