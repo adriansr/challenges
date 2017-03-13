@@ -99,7 +99,7 @@ class Problem {
                     int digit = (res / pow10_(level)) % 10;
                     bool mapped;
                     if ( (mapped=mapping_[unk]==-1)) {
-                        if (mask & (1 << digit)) return false;
+                        if ( (mask & (1 << digit)) || (digit==0 && noZero_[unk])) return false;
                         mapping_[unk] = digit;
                     } else {
                         if (mapping_[unk] != digit) return false;
@@ -123,7 +123,7 @@ class Problem {
                     char unk = operand_[2][operand_[2].size() - lvl - 1];
                     if (mapping_[unk] == -1) {
                         int digit = (target / pow10_(lvl)) % 10;
-                        if (mask & (1 << digit)) {
+                        if ( (mask & (1 << digit)) || (digit==0 && noZero_[unk])) {
                             for (char c : mapped_here) mapping_[c] = -1;
                             return false;
                         }
